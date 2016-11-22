@@ -4,8 +4,17 @@ const request = require('supertest');
 const {app} = require('./../server');
 const {Todo} = require('./../models/todos');
 
+
+
+var todos =[
+	{text:"first"},
+	{text:"second"}
+];
+
 beforeEach((done)=>{
-	Todo.remove({}).then(()=> done());//remove todos todos
+	Todo.remove({}).then(()=>{//remove todos todos
+		return Todo.insertMany(todos);
+	}).then(()=> done());
 });
 
 describe('POST/Todos', ()=>{
@@ -20,7 +29,7 @@ describe('POST/Todos', ()=>{
 			.expect(200)//verifica o status code
 			.expect((res)=>{//verifica resposta
 				expect(res.body.text).toBe(text);
-				console.log(JSON.stringify(res.body, undefined, 2));
+				//console.log(JSON.stringify(res.body, undefined, 2));
 			})
 			.end((err, res)=>{
 				if(err){
@@ -28,7 +37,7 @@ describe('POST/Todos', ()=>{
 				}
 
 				//else
-				Todo.find().then(//busca no banco com o metodo find do moongose se add 1
+				Todo.find({text}).then(//busca no banco com o metodo find do moongose se add 1
 					(todos)=>{
 						expect(todos.length).toBe(1);
 						expect(todos[0].text).toBe(text);
@@ -38,7 +47,7 @@ describe('POST/Todos', ()=>{
 			});
 	});
 
-	it('shold not crate todo with invalid data', (done)=>{
+	it('shold not create todo with invalid data', (done)=>{
 		request(app)
 			.post('/todos')
 			.send({})
@@ -50,10 +59,22 @@ describe('POST/Todos', ()=>{
 
 				Todo.find().then(
 					(todos)=>{
-						expect(todos.length).toBe(0);
+						expect(todos.length).toBe(2);
 						done();
 					}
 				).catch((e)=> done());
 			});
+	});
+});
+
+describe('GET/Todos', ()=>{
+	it('Should list all todos',(done)=>{
+		request(app)
+			.get('/todos')
+			.expect(200)
+			.expect((res)=>{
+				expect(res.body.todos.length).toBe(2);
+			})
+			.end(done);
 	});
 });
