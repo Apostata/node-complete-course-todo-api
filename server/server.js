@@ -54,21 +54,13 @@ app.get('/todos/:id', (req, res)=>{
 				return res.status(400).send();
 			}
 			
-			res.status(200).send(todo);
+			res.status(200).send({todo});
 		}
 	).catch(
 		(e)=>{
 			res.status(400).send();
 		}
 	);
-	//or 404 - back empty send
-
-	//findById
-	//sucess
-		//if exists send back
-		//else 404 - empty body
-	//error
-		//error 404 - send empty body
 });
 
 app.listen(port, ()=>{
