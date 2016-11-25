@@ -14,7 +14,9 @@ var todos =[
 	},
 	{
 		_id:new ObjectID(),
-		text:"second"
+		text:"second",
+		completed:true,
+		completedAt:333
 	}
 ];
 
@@ -24,7 +26,7 @@ beforeEach((done)=>{
 	}).then(()=> done());
 });
 
-describe('POST/Todos', ()=>{
+describe('POST/todos', ()=>{
 	it('Should create a new todo',(done)=>{
 		var text = 'Test todo text';
 
@@ -74,7 +76,7 @@ describe('POST/Todos', ()=>{
 	});
 });
 
-describe('GET/Todos', ()=>{
+describe('GET/todos', ()=>{
 	it('Should list all todos',(done)=>{
 		request(app)
 			.get('/todos')
@@ -86,7 +88,7 @@ describe('GET/Todos', ()=>{
 	});
 });
 
-describe('GET/Todos/:id', ()=>{
+describe('GET/todos/:id', ()=>{
 	it('Should return todo doc', (done)=>{
 		request(app)
 		.get(`/todos/${todos[0]._id.toHexString()}`)
@@ -115,7 +117,7 @@ describe('GET/Todos/:id', ()=>{
 });
 
 
-describe('DELETE/Todos/:id', ()=>{
+describe('DELETE/todos/:id', ()=>{
 	it('Should remove a todo',(done)=>{
 		var hexId = todos[1]._id.toHexString();
 
@@ -153,4 +155,61 @@ describe('DELETE/Todos/:id', ()=>{
 			.expect(404)
 			.end(done);
 	});
-})
+});
+
+describe('PATCH/todos:id', ()=>{
+	it('Should update the todo', (done)=>{
+		var hexId = todos[0]._id.toHexString();
+		var text = 'Update todo 1';
+		var completed = true;
+
+		request(app)
+			.patch(`/todos/${hexId}`)
+			.send({
+				text,
+				completed
+			})
+			.expect(200)
+			.expect((res)=>{
+				expect(res.body.todo.text).toBe(text);
+				expect(res.body.todo.completed).toBe(true);
+				expect(res.body.todo.completedAt).toBeA('number');
+			})
+			.end(done);
+	});
+
+	it('Should clear completedAt when todo is not completed', (done)=>{
+		var hexId = todos[1]._id.toHexString();
+		var text = 'Update todo 2';
+		var completed = false;
+
+		request(app)
+			.patch(`/todos/${hexId}`)
+			.send({
+				text,
+				completed
+			})
+			.expect(200)
+			.expect((res)=>{
+				expect(res.body.todo.text).toBe(text);
+				expect(res.body.todo.completed).toBe(false);
+				expect(res.body.todo.completedAt).toNotExist()
+			})
+			.end(done);
+	});
+
+	it('Shold return 400 if todo not find',(done)=>{
+		var hexId = new ObjectID().toHexString();
+		request(app)
+			.patch(`/todos/${hexId}`)
+			.expect(400)
+			.end(done);
+	});
+
+	it('Should return 404 if ObjectID is invalid',(done)=>{
+		request(app)
+			.patch('/todos/123')
+			.expect(404)
+			.end(done);
+	});
+});
