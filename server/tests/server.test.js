@@ -1,30 +1,15 @@
 const expect = require('expect');
 const request = require('supertest');
+const bcrypt = require('bcryptjs');
 const {ObjectID} = require('mongodb');
 
 const {app} = require('./../server');
 const {Todo} = require('./../models/todos');
+const {User} = require('./../models/users');
+const {todos, populateTodos, users, populateUsers} = require('./seed/seed');
 
-
-
-var todos =[
-	{
-		_id:new ObjectID(),
-		text:"first"
-	},
-	{
-		_id:new ObjectID(),
-		text:"second",
-		completed:true,
-		completedAt:333
-	}
-];
-
-beforeEach((done)=>{
-	Todo.remove({}).then(()=>{//remove todos todos
-		return Todo.insertMany(todos);
-	}).then(()=> done());
-});
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST/todos', ()=>{
 	it('Should create a new todo',(done)=>{
@@ -211,5 +196,80 @@ describe('PATCH/todos:id', ()=>{
 			.patch('/todos/123')
 			.expect(404)
 			.end(done);
+	});
+});
+
+describe('GET /user/me', ()=>{
+	it('Shold return user if aauthenticated', (done)=>{
+		request(app)
+			.get('/users/me')
+			.set('x-auth', users[0].tokens[0].token)
+			.expect(200)
+			.expect((res)=>{
+				expect(res.body._id).toBe(users[0]._id.toHexString());
+				expect(res.body.email).toBe(users[0].email);
+			})
+		.end(done);
+	});
+
+	it('Should return 401 if not aauthenticated', (done)=>{
+		request(app)
+			.get('/users/me')
+			.expect(401)
+			.expect((res)=>{
+				expect(res.body).toEqual({})
+			})
+		.end(done);
+	});
+});
+
+describe('POST /users', ()=>{
+	it('Should create a user', (done)=>{
+		var email = 'example@example.com';
+		var password = '123rene!';
+
+		request(app)
+			.post('/users')
+			.send({email, password})
+			.expect(200)
+			.expect((res)=>{
+				expect(res.headers['x-auth']).toExist();
+				expect(res.body._id).toExist();
+				expect(res.body.email).toBe(email);
+			})
+		.end((err)=>{
+			if(err){
+				return done(err);
+			}
+			User.findOne({email}).then((user)=>{
+				expect(user).toExist();
+				expect(user.password).toNotBe(password);
+				done();
+			});
+		});
+	});
+
+	it('Should return validation error is request invalid', (done)=>{
+		//send invalid email e pass
+		var email = 'fail@examplecom';
+		var password = '123pass!';
+
+		request(app)
+			.post('/users')
+			.send({email, password})
+			.expect(400)
+		.end(done);
+
+	});
+
+	it('Should\'t create user if email in use',(done)=>{
+		var email = users[0].email;
+		var password = '123rene!';
+		var hashedPass = 
+		request(app)
+			.post('/users')
+			.send({email, password})
+			.expect(400)
+		.end(done);
 	});
 });
