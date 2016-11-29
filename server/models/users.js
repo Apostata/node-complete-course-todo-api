@@ -54,6 +54,18 @@ UserSchema.methods.generateAuthToken = function(){
 	);
 };
 
+UserSchema.methods.removeToken = function(token){
+	var user = this;
+
+	return user.update({
+		$pull:{ //remove do array todos as instancias que sejam igual ao filtro, no caso tokens.token = variavel token
+			tokens:{
+				token // token: token
+			}
+		}
+	})
+};
+
 UserSchema.statics.findByToken =function(token){
 	var User = this;
 	var decoded;

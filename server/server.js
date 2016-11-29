@@ -143,12 +143,20 @@ app.get('/users/me', authenticate, (req, res)=>{
 
 app.post('/users/login', (req, res)=>{
 	var body = _.pick(req.body, ['email', 'password']);
-	User.findByCredentials(body.email, body.password).then((user)=>{
-		user.generateAuthToken().then((token)=>{
+	User.findByCredentials(body.email, body.password).then((user)=>{ // statics cria uma função que é istanciada com o próprio modelo como uma Classe
+		user.generateAuthToken().then((token)=>{ // method cria uma função que é instanciada por um objeto
 			res.header('x-auth', token).send(user);
 		});
 
 	}).catch((e)=>{
+		res.status(400).send();
+	})
+});
+
+app.delete('/users/me/token', authenticate, (req, res)=>{
+	req.user.removeToken(req.token).then(()=>{
+		res.status(200).send();
+	},()=>{
 		res.status(400).send();
 	})
 });
